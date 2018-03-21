@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function, absolute_import, division, generators, nested_scopes
 import logging
+from operator import gt
 import six
 from six.moves import xrange
 from itertools import *
@@ -565,3 +566,40 @@ class Slice(JSONPath):
 
     def __eq__(self, other):
         return isinstance(other, Slice) and other.start == self.start and self.end == other.end and other.step == self.step
+
+
+class Cmp(JSONPath):
+    """
+    A JSONPath expression that supports value comparison
+
+    >>> jsonpath_expr = Cmp(Child(Slice(), Fields('spam')), gt, 2)  # "[*].spam gt 2"
+    >>> matches = jsonpath_expr.find([
+    ...     {"spam": 2, "bacon": 1, "sausage": 1},
+    ...     {"spam": 10, "baked beans": 1}
+    ... ])
+    >>> [match.value for match in matches]
+    [10]
+
+    """
+    def __init__(self, jsonpath, operator, operand):
+        if not hasattr(operator, '__call__'):
+            raise ValueError('operator must be callable')
+        self.jsonpath = jsonpath
+        self.op = operator
+        self.operand = operand
+
+    def find(self, data):
+        return [match for match in self.jsonpath.find(data) if self.op(match.value, self.operand)]
+
+    def __str__(self):
+        return '{jsonpath} {op} {operand}'.format(
+            jsonpath=self.jsonpath, op=self.op.__name__, operand=repr(self.operand)
+        )
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Cmp) and
+            other.jsonpath == self.jsonpath and
+            other.op == self.op and
+            other.operand == self.operand
+        )
