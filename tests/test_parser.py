@@ -38,3 +38,24 @@ class TestParser(unittest.TestCase):
                                 ('foo where baz', Where(Fields('foo'), Fields('baz'))),
                                 ('foo..baz', Descendants(Fields('foo'), Fields('baz'))),
                                 ('foo..baz.bing', Descendants(Fields('foo'), Child(Fields('baz'), Fields('bing'))))])
+
+    def test_goessner_examples(self):
+        # Examples taken from https://goessner.net/articles/JsonPath/
+        self.check_parse_cases([
+            ("$.store.book[0].title", Child(Child(Child(Child(Root(), Fields('store')), Fields('book')), Index(0)), Fields('title'))),
+            ("$['store']['book'][0]['title']", Child(Child(Child(Child(Root(), Fields('store')), Fields('book')), Index(0)), Fields('title'))),
+            # ("$.store.book[(@.length-1)].title", None),
+            # ("$.store.book[?(@.price < 10)].title", None),
+            ("$.store.book[*].author", Child(Child(Child(Child(Root(), Fields('store')), Fields('book')), Slice()), Fields('author'))),
+            ("$..author", Descendants(Root(), Fields('author'))),
+            ("$.store.*", Child(Child(Root(), Fields('store')), Fields('*'))),
+            ("$.store..price", Descendants(Child(Root(), Fields('store')), Fields('price'))),
+            ("$..book[2]", Child(Descendants(Root(), Fields('book')), Index(2))),
+            # ("$..book[(@.length-1)]", None),
+            ("$..book[-1:]", Child(Descendants(Root(), Fields('book')), Slice(start=-1))),
+            # ("$..book[0,1]", None),
+            ("$..book[:2]", Child(Descendants(Root(), Fields('book')), Slice(end=2))),
+            # ("$..book[?(@.isbn)]", None),
+            # ("$..book[?(@.price<10)]", None),
+            ("$..*", Descendants(Root(), Fields('*'))),
+        ])
